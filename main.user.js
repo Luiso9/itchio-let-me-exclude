@@ -4,9 +4,10 @@
 // @version      3.5
 // @description  let u exclude tag on itch.io without needing to manually edit URL params.
 // @author       Luiso9
-// @downloadURL  https://raw.githubusercontent.com/Luiso9/itchio-let-me-exclude/refs/heads/main/main.user.js
-// @updateURL    https://raw.githubusercontent.com/Luiso9/itchio-let-me-exclude/refs/heads/main/main.user.js
+// @downloadURL  https://github.com/Luiso9/itchio-let-me-exclude/raw/refs/heads/main/main.user.js
+// @updateURL    https://github.com/Luiso9/itchio-let-me-exclude/raw/refs/heads/main/main.user.js
 // @homepageURL  https://github.com/Luiso9/itchio-let-me-exclude
+// @icon         https://ai.driannsa.my.id/xn6PdUe1hvCaEeUk.png
 // @match        https://itch.io/*
 // @grant        none
 // ==/UserScript==
