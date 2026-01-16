@@ -19,7 +19,7 @@
         CACHE_KEY: 'itchio_tags_cache',
         CACHE_TIME: 'itchio_tags_timestamp',
         CACHE_DURATION: 604800000,
-        TAG_SOURCE_URL: 'https://pub-your-id.r2.dev/tags.json'
+        TAG_SOURCE_URL: 'https://ai.driannsa.my.id/tags.json'
     };
 
     function normalizeTag(readableTag) {
