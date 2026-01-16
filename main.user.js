@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         OI LET ME EXCLUDE
 // @namespace    http://tampermonkey.net/
-// @version      3.0
+// @version      3.5
 // @description  let u exclude tag on itch.io without needing to manually edit URL params.
 // @author       Luiso9
 // @downloadURL  https://raw.githubusercontent.com/Luiso9/itchio-let-me-exclude/refs/heads/main/main.user.js
