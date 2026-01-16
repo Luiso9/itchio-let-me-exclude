@@ -18,8 +18,8 @@
         STORAGE_KEY: 'itchio_exclude_config',
         CACHE_KEY: 'itchio_tags_cache',
         CACHE_TIME: 'itchio_tags_timestamp',
-        CACHE_DURATION: 604800000, // 7 Days
-        TAG_SOURCE_URL: 'https://ai.driannsa.my.id/tags.json' 
+        CACHE_DURATION: 604800000,
+        TAG_SOURCE_URL: 'https://pub-your-id.r2.dev/tags.json'
     };
 
     function normalizeTag(readableTag) {
@@ -53,13 +53,10 @@
     function updatePageUrl() {
         const desiredTags = getExcludedTags();
         const url = new URL(window.location.href);
-        
         url.searchParams.delete('exclude');
-
         desiredTags.forEach(tag => {
             url.searchParams.append('exclude', normalizeTag(tag));
         });
-
         if (url.toString() !== window.location.href) {
             window.location.replace(url.toString());
         }
@@ -78,132 +75,166 @@
             const response = await fetch(CONFIG.TAG_SOURCE_URL);
             if (!response.ok) throw new Error('Network response was not ok');
             const data = await response.json();
-            
             localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(data));
             localStorage.setItem(CONFIG.CACHE_TIME, now);
             return data;
         } catch (error) {
-            console.error("Itch Excluder: Failed to fetch tags.", error);
+            console.error(error);
             return cached ? JSON.parse(cached) : [];
         }
     }
 
-    async function createUI() {
+    async function createNativeUI() {
+        const tagsLabel = document.querySelector('.tags_label');
+        if (!tagsLabel) return;
+        
+        const container = tagsLabel.parentElement;
         const availableTags = await fetchTags();
 
-        const div = document.createElement('div');
-        div.style.cssText = `
-            position: fixed; bottom: 20px; right: 20px;
-            background: #181818; border: 1px solid #444; color: #fff;
-            padding: 15px; border-radius: 6px; z-index: 99999;
-            font-family: Lato, sans-serif; width: 300px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+        const header = document.createElement('div');
+        header.className = 'tags_label';
+        header.style.marginTop = '15px';
+        header.innerHTML = `
+            <span title="Excluded tags" class="tags_label" style="color: #fa5c5c;">
+                <svg role="img" viewBox="0 0 24 24" version="1.1" stroke-width="2" stroke-linecap="round" class="svgicon icon_tag" width="18" height="18" fill="none" stroke="currentColor" stroke-linejoin="round" style="margin-right:5px;"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                Exclude Tags
+            </span>
         `;
+        container.appendChild(header);
 
-        const title = document.createElement('div');
-        title.innerHTML = "<b>Exclude Tag here</b>";
-        title.style.marginBottom = "10px";
-        title.style.fontSize = "14px";
-        title.style.color = "#b34141ff";
-        div.appendChild(title);
+        const renderExcludedPills = () => {
+            container.querySelectorAll('.custom-ban-pill').forEach(el => el.remove());
+            
+            const current = getExcludedTags();
+            current.forEach(tag => {
+                const pill = document.createElement('div');
+                pill.className = 'tag_segmented_btn custom-ban-pill';
+                pill.style.marginRight = '5px';
+                
+                const a = document.createElement('a');
+                a.innerHTML = `${tag} <span style="opacity:0.6; margin-left:4px;">✕</span>`;
+                a.style.cssText = `
+                    border-color: #fa5c5c !important; 
+                    color: #fa5c5c !important; 
+                    cursor: pointer;
+                    display: inline-block;
+                    padding: 5px 10px;
+                    border: 1px solid;
+                    border-radius: 4px;
+                    text-decoration: none;
+                    font-size: 14px;
+                    background: rgba(250, 92, 92, 0.1);
+                `;
+                
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    removeExcludedTag(tag);
+                };
 
-        const dataListId = "itch-tags-list";
-        const dataList = document.createElement('datalist');
-        dataList.id = dataListId;
-        if (availableTags) {
-             availableTags.forEach(tag => {
-                const opt = document.createElement('option');
-                opt.value = tag;
-                dataList.appendChild(opt);
+                pill.appendChild(a);
+                container.insertBefore(pill, wrapper); 
             });
-        }
-        div.appendChild(dataList);
+        };
 
-        const input = document.createElement('input');
-        input.setAttribute('list', dataListId);
-        input.placeholder = "Type & Tab to EXCLUDE...";
-        input.style.cssText = `
-            width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 10px; 
-            background: #2a2a2a; color: white; border: 1px solid #555; border-radius: 4px;
-            outline: none;
-        `;
+        const wrapper = document.createElement('div');
+        wrapper.className = 'selectize-control tag_selector single';
+        wrapper.style.display = 'block';
+        wrapper.style.marginTop = '5px';
+        wrapper.style.width = '100%';
+
+        const inputDiv = document.createElement('div');
+        inputDiv.className = 'selectize-input items not-full has-options';
+        inputDiv.style.display = 'flex';
+        inputDiv.style.alignItems = 'center';
         
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.autocomplete = 'off';
+        input.placeholder = 'Type to exclude...';
+        input.style.width = '100%';
+        input.style.border = 'none';
+        input.style.outline = 'none';
+        input.style.background = 'transparent';
+        input.style.color = 'inherit';
+
+        inputDiv.appendChild(input);
+        wrapper.appendChild(inputDiv);
+
+        const dropdown = document.createElement('div');
+        dropdown.className = 'selectize-dropdown single tag_selector';
+        dropdown.style.display = 'none';
+        dropdown.style.width = '100%';
+        dropdown.style.position = 'absolute';
+        dropdown.style.zIndex = '999';
+        
+        const dropdownContent = document.createElement('div');
+        dropdownContent.className = 'selectize-dropdown-content';
+        dropdown.appendChild(dropdownContent);
+        wrapper.appendChild(dropdown);
+
+        container.appendChild(wrapper);
+
+        input.addEventListener('input', () => {
+            const val = input.value.trim().toLowerCase();
+            dropdownContent.innerHTML = '';
+            
+            if (!val || !availableTags) {
+                dropdown.style.display = 'none';
+                return;
+            }
+
+            const matches = availableTags.filter(t => t.toLowerCase().includes(val)).slice(0, 8);
+            
+            if (matches.length > 0) {
+                dropdown.style.display = 'block';
+                matches.forEach(match => {
+                    const option = document.createElement('div');
+                    option.className = 'option';
+                    option.innerText = match;
+                    option.style.padding = '5px 10px';
+                    option.style.cursor = 'pointer';
+                    
+                    option.onmouseover = () => {
+                        option.style.backgroundColor = '#f5f5f5';
+                        option.style.color = '#000';
+                    };
+                    option.onmouseout = () => {
+                        option.style.backgroundColor = 'transparent';
+                        option.style.color = 'inherit';
+                    };
+                    
+                    option.onclick = () => {
+                        saveExcludedTag(match);
+                        input.value = '';
+                        dropdown.style.display = 'none';
+                    };
+                    dropdownContent.appendChild(option);
+                });
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Tab' || e.key === 'Enter') {
-                e.preventDefault();
-                
-                const val = input.value.trim();
-                if (!val) return;
-
-                const match = availableTags.find(t => t.toLowerCase().startsWith(val.toLowerCase()));
-
-                if (match) {
-                    input.value = match;
-                    saveExcludedTag(match);
-                    input.value = '';
-                } else {
-                    input.style.borderColor = 'red';
-                    setTimeout(() => input.style.borderColor = '#555', 500);
+                const visibleOption = dropdownContent.querySelector('.option');
+                if (visibleOption && dropdown.style.display !== 'none') {
+                    e.preventDefault();
+                    visibleOption.click();
                 }
             }
         });
 
-        input.addEventListener('change', (e) => {
-            const val = e.target.value;
-            if (availableTags.includes(val)) {
-                saveExcludedTag(val);
-                e.target.value = '';
-            }
-        });
-
-        div.appendChild(input);
-
-        const listContainer = document.createElement('div');
-        listContainer.style.maxHeight = "200px";
-        listContainer.style.overflowY = "auto";
-        
-        const renderList = () => {
-            listContainer.innerHTML = '';
-            const current = getExcludedTags();
-            
-            if(current.length === 0) {
-                listContainer.innerHTML = '<div style="color:#777; font-size:12px; text-align:center;">No tags banned.</div>';
-                return;
-            }
-
-            current.forEach(tag => {
-                const item = document.createElement('div');
-                item.style.cssText = `
-                    display: flex; justify-content: space-between; align-items: center;
-                    background: #333; margin-bottom: 4px; padding: 6px 10px; 
-                    border-radius: 4px; font-size: 13px;
-                `;
-                
-                const label = document.createElement('span');
-                label.innerText = tag;
-                
-                const del = document.createElement('span');
-                del.innerHTML = "&times;"; // it just X ignore it
-                del.style.cssText = "cursor: pointer; color: #aaa; font-weight: bold; font-size: 16px;";
-                del.onmouseover = () => del.style.color = "#fff";
-                del.onmouseout = () => del.style.color = "#aaa";
-                del.onclick = () => {
-                    removeExcludedTag(tag);
-                    renderList();
-                };
-
-                item.appendChild(label);
-                item.appendChild(del);
-                listContainer.appendChild(item);
-            });
-        };
-
-        renderList();
-        div.appendChild(listContainer);
-        document.body.appendChild(div);
+        renderExcludedPills();
     }
 
-    updatePageUrl(); 
-    createUI();
+    updatePageUrl();
+    createNativeUI();
 
 })();
