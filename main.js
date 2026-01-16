@@ -1,9 +1,12 @@
 // ==UserScript==
-// @name         Itch.io Smart Excluder (UX Enhanced)
+// @name         OI LET ME EXCLUDE
 // @namespace    http://tampermonkey.net/
 // @version      3.0
-// @description  Fetches tags, enforces strict selection, auto-reloads on delete, and supports Tab-complete.
-// @author       Gemini & User
+// @description  let u exclude tag on itch.io without needing to manually edit URL params.
+// @author       Luiso9
+// @downloadURL  https://raw.githubusercontent.com/Luiso9/itchio-let-me-exclude/refs/heads/main/main.js
+// @updateURL    https://raw.githubusercontent.com/Luiso9/itchio-let-me-exclude/refs/heads/main/main.js
+// @homepageURL  https://github.com/Luiso9/itchio-let-me-exclude
 // @match        https://itch.io/*
 // @grant        none
 // ==/UserScript==
